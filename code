@@ -1,0 +1,50 @@
+const puppeteer = require('puppeteer');
+
+(async () => {
+  const browser = await puppeteer.launch();
+  const page = await browser.newPage();
+
+  const baseUrl = 'https://example-website.com/products?page=';
+  const totalPages = 5; // Define the number of pages to scrape.
+
+  const scrapedData = [];
+
+  for (let pageIdx = 1; pageIdx <= totalPages; pageIdx++) {
+    const pageUrl = `${baseUrl}${pageIdx}`;
+    await page.goto(pageUrl);
+    
+    // Check if CAPTCHA exists by looking for a CAPTCHA-specific element.
+    const isCaptchaPage = await page.evaluate(() => {
+      return !!document.querySelector('.captcha-element');
+    });
+
+    if (isCaptchaPage) {
+      console.log(`CAPTCHA detected on page ${pageIdx}. Handling CAPTCHA...`);
+      
+      // Implement CAPTCHA handling logic here, e.g., prompt for manual verification.
+      // You might need to use external services or human intervention for CAPTCHA solving.
+
+      // After handling CAPTCHA, you can continue the loop or break as needed.
+    }
+
+    await page.waitForSelector('.product-item');
+
+    const pageData = await page.evaluate(() => {
+      const products = Array.from(document.querySelectorAll('.product-item'));
+      return products.map(product => {
+        const name = product.querySelector('.product-name').innerText;
+        const price = product.querySelector('.product-price').innerText;
+        return { name, price };
+      });
+    });
+
+    scrapedData.push(...pageData);
+
+    console.log(`Scraped data from page ${pageIdx}`);
+  }
+
+  await browser.close();
+
+  // Process the scraped data as needed (e.g., save to a file or a database).
+  console.log('Bulk data scraping completed.');
+})();
